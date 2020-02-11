@@ -4955,7 +4955,7 @@ static inline unsigned long wlan_hdd_get_pm_qos_cpu_latency(void)
 #else
 static inline unsigned long wlan_hdd_get_pm_qos_cpu_latency(void)
 {
-	return PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE;
+	return PM_QOS_CPU_LATENCY_DEFAULT_VALUE;
 }
 #endif /* (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 7, 0) */
 #endif /* defined(CLD_PM_QOS) || defined(FEATURE_RUNTIME_PM) */
