@@ -148,24 +148,11 @@ static int request_vreg_gpio(struct fpc1020_data *fpc1020, bool enable)
 	int rc = 0;
 	struct device *dev = fpc1020->dev;
 
-	dev_info(dev, "fpc %s --->: enter!\n", __func__);
-
 	mutex_lock(&fpc1020->lock);
 
 	if (enable && !fpc1020->gpios_requested) {
-		rc = fpc1020_request_named_gpio(fpc1020, "fpc,gpio_vdd1v8",
-						&fpc1020->vdd1v8_gpio);
-		if (rc == FPC_GPIO_NO_DEFINED) {
-			dev_err(dev, "fpc vdd1v8 gpio get failed! \n");
-			vreg_conf[0].gpio = FPC_GPIO_NO_DEFAULT;
-		} else if (rc == FPC_GPIO_REQUEST_FAIL) {
-			dev_err(dev, "fpc vdd1v8 gpio request failed! \n");
-			goto release_vreg_gpio;
-		} else {
-			dev_info(dev, "fpc vdd1v8 gpio applied at  %d\n",
-				 fpc1020->vdd1v8_gpio);
-			vreg_conf[0].gpio = fpc1020->vdd1v8_gpio;
-		}
+		// requesting fpc,gpio_vdd1v8 will always return FPC_GPIO_NO_DEFINED.
+		vreg_conf[0].gpio = FPC_GPIO_NO_DEFAULT;
 
 		dev_info(dev, "fpc vreg gpio requested successfully!\n");
 
@@ -175,7 +162,7 @@ static int request_vreg_gpio(struct fpc1020_data *fpc1020, bool enable)
 			pr_err("fpc irq gpio request failed!\n");
 			goto release_irq_gpio;
 		} else {
-			dev_info(dev, "fpc irq gpio applied at  %d\n",
+			dev_info(dev, "fpc irq gpio applied at %d\n",
 				 fpc1020->irq_gpio);
 		}
 
@@ -219,14 +206,6 @@ release_irq_gpio:
 			devm_gpio_free(dev, fpc1020->irq_gpio);
 			fpc1020->irq_gpio = FPC_GPIO_NO_DEFAULT;
 			dev_info(dev, "fpc irq gpio released successfully!\n");
-		}
-
-release_vreg_gpio:
-		if (gpio_is_valid(fpc1020->vdd1v8_gpio)) {
-			devm_gpio_free(dev, fpc1020->vdd1v8_gpio);
-			fpc1020->vdd1v8_gpio = FPC_GPIO_NO_DEFAULT;
-			vreg_conf[0].gpio = FPC_GPIO_NO_DEFAULT;
-			dev_info(dev, "fpc vreg gpio released successfully!\n");
 		}
 
 		fpc1020->gpios_requested = false;
@@ -857,8 +836,6 @@ static int fpc1020_probe(struct platform_device *pdev)
 	struct fpc1020_data *fpc1020 =
 		devm_kzalloc(dev, sizeof(*fpc1020), GFP_KERNEL);
 
-	dev_info(dev, "fpc %s --->: enter! \n", __func__);
-
 	if (!fpc1020) {
 		dev_err(dev,
 			"failed to allocate memory for struct fpc1020_data\n");
@@ -936,10 +913,9 @@ static int fpc1020_probe(struct platform_device *pdev)
 	fpc1020->notifier = fpc_notif_block;
 	mi_disp_register_client(&fpc1020->notifier);
 
-	dev_info(dev, "%s: ok\n", __func__);
+	dev_info(dev, "%s: successfull\n", __func__);
 
 exit:
-	dev_info(dev, "fpc %s <---: exit! \n", __func__);
 	return rc;
 }
 
