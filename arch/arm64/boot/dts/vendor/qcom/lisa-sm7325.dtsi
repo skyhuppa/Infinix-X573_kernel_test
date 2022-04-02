@@ -436,16 +436,10 @@ And public attribution of xiaomi platforms
 };
 
 &usb2_phy0 {
-	mi,factory-usb;
-	qcom,param-override-seq-fac =
-		<0xe3 0x6c	/* override_x0 */
-		0xc6 0x70	/* override_x1 */
-		0x0b 0x74>;	/* override x2 */
-
 	qcom,param-override-seq =
 		<0xe3 0x6c	/* override_x0 */
-		0xc6 0x70	/* override_x1 */
-		0x0b 0x74>;	/* override x2 */
+		 0xc6 0x70	/* override_x1 */
+		 0x0b 0x74>;	/* override x2 */
 };
 
 &sde_dp {
