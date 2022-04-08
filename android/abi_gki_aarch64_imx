@@ -439,7 +439,7 @@
   platform_get_resource_byname
   platform_irq_count
   pm_qos_add_request
-  pm_qos_remove_request
+  cpu_latency_qos_remove_request
   __pm_relax
   pm_runtime_allow
   __pm_runtime_disable

@@ -1455,9 +1455,9 @@
   pm_qos_add_notifier
   pm_qos_add_request
   pm_qos_remove_notifier
-  pm_qos_remove_request
-  pm_qos_request_active
-  pm_qos_update_request
+  cpu_latency_qos_remove_request
+  cpu_latency_qos_request_active
+  cpu_latency_qos_update_request
   __pm_relax
   pm_relax
   pm_runtime_allow

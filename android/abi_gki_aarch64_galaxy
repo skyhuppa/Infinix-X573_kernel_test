@@ -1827,9 +1827,9 @@
   pm_genpd_remove_subdomain
   pm_power_off
   pm_qos_add_request
-  pm_qos_remove_request
-  pm_qos_request_active
-  pm_qos_update_request
+  cpu_latency_qos_remove_request
+  cpu_latency_qos_request_active
+  cpu_latency_qos_update_request
   pm_relax
   pm_runtime_allow
   pm_runtime_barrier

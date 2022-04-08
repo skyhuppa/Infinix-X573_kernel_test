@@ -185,7 +185,7 @@
   of_property_read_variable_u8_array
   pinctrl_lookup_state
   pm_qos_add_request
-  pm_qos_update_request
+  cpu_latency_qos_update_request
   queue_work_on
   _raw_spin_lock_irqsave
   _raw_spin_unlock_irqrestore

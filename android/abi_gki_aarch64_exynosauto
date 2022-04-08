@@ -377,7 +377,7 @@
   platform_get_resource
   platform_get_resource_byname
   pm_power_off
-  pm_qos_update_request
+  cpu_latency_qos_update_request
   pm_runtime_allow
   __pm_runtime_disable
   pm_runtime_enable
@@ -1347,7 +1347,7 @@
 
 # required by scaler.ko
   clk_set_parent
-  pm_qos_remove_request
+  cpu_latency_qos_remove_request
   sort
   v4l2_ctrl_handler_free
   v4l2_ctrl_handler_init_class
