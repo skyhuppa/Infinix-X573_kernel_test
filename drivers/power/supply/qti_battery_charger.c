@@ -634,14 +634,6 @@ static int battery_chg_fw_write(struct battery_chg_dev *bcdev, void *data,
 	return rc;
 }
 
-#ifdef CONFIG_MACH_XIAOMI
-#define BSWAP_32(x) \
-	(u32)((((u32)(x) & 0xff000000) >> 24) | \
-			(((u32)(x) & 0x00ff0000) >> 8) | \
-			(((u32)(x) & 0x0000ff00) << 8) | \
-			(((u32)(x) & 0x000000ff) << 24))
-#endif
-
 static int battery_chg_write(struct battery_chg_dev *bcdev, void *data,
 				int len)
 {
@@ -679,6 +671,42 @@ static int battery_chg_write(struct battery_chg_dev *bcdev, void *data,
 	mutex_unlock(&bcdev->rw_lock);
 
 	return rc;
+}
+
+static int write_property_id(struct battery_chg_dev *bcdev,
+			struct psy_state *pst, u32 prop_id, u32 val)
+{
+	struct battery_charger_req_msg req_msg = { { 0 } };
+
+	req_msg.property_id = prop_id;
+	req_msg.battery_id = 0;
+	req_msg.value = val;
+	req_msg.hdr.owner = MSG_OWNER_BC;
+	req_msg.hdr.type = MSG_TYPE_REQ_RESP;
+	req_msg.hdr.opcode = pst->opcode_set;
+
+	pr_debug("psy: %s prop_id: %u val: %u\n", pst->psy->desc->name,
+		req_msg.property_id, val);
+
+	return battery_chg_write(bcdev, &req_msg, sizeof(req_msg));
+}
+
+static int read_property_id(struct battery_chg_dev *bcdev,
+			struct psy_state *pst, u32 prop_id)
+{
+	struct battery_charger_req_msg req_msg = { { 0 } };
+
+	req_msg.property_id = prop_id;
+	req_msg.battery_id = 0;
+	req_msg.value = 0;
+	req_msg.hdr.owner = MSG_OWNER_BC;
+	req_msg.hdr.type = MSG_TYPE_REQ_RESP;
+	req_msg.hdr.opcode = pst->opcode_get;
+
+	pr_debug("psy: %s prop_id: %u\n", pst->psy->desc->name,
+		req_msg.property_id);
+
+	return battery_chg_write(bcdev, &req_msg, sizeof(req_msg));
 }
 
 #ifdef CONFIG_MACH_XIAOMI
@@ -749,42 +777,6 @@ static int read_verify_digest_property_id(struct battery_chg_dev *bcdev,
 	return battery_chg_write(bcdev, &req_msg, sizeof(req_msg));
 }
 #endif
-
-static int write_property_id(struct battery_chg_dev *bcdev,
-			struct psy_state *pst, u32 prop_id, u32 val)
-{
-	struct battery_charger_req_msg req_msg = { { 0 } };
-
-	req_msg.property_id = prop_id;
-	req_msg.battery_id = 0;
-	req_msg.value = val;
-	req_msg.hdr.owner = MSG_OWNER_BC;
-	req_msg.hdr.type = MSG_TYPE_REQ_RESP;
-	req_msg.hdr.opcode = pst->opcode_set;
-
-	pr_debug("psy: %s prop_id: %u val: %u\n", pst->psy->desc->name,
-		req_msg.property_id, val);
-
-	return battery_chg_write(bcdev, &req_msg, sizeof(req_msg));
-}
-
-static int read_property_id(struct battery_chg_dev *bcdev,
-			struct psy_state *pst, u32 prop_id)
-{
-	struct battery_charger_req_msg req_msg = { { 0 } };
-
-	req_msg.property_id = prop_id;
-	req_msg.battery_id = 0;
-	req_msg.value = 0;
-	req_msg.hdr.owner = MSG_OWNER_BC;
-	req_msg.hdr.type = MSG_TYPE_REQ_RESP;
-	req_msg.hdr.opcode = pst->opcode_get;
-
-	pr_debug("psy: %s prop_id: %u\n", pst->psy->desc->name,
-		req_msg.property_id);
-
-	return battery_chg_write(bcdev, &req_msg, sizeof(req_msg));
-}
 
 static int get_property_id(struct psy_state *pst,
 			enum power_supply_property prop)
@@ -880,13 +872,10 @@ static bool validate_message(struct battery_charger_resp_msg *resp_msg,
 				size_t len)
 {
 #ifdef CONFIG_MACH_XIAOMI
-	struct xm_verify_digest_resp_msg *verify_digest_resp_msg =
-						(struct xm_verify_digest_resp_msg *)resp_msg;
-	struct xm_ss_auth_resp_msg *ss_auth_resp_msg =
-						(struct xm_ss_auth_resp_msg *)resp_msg;
+	struct xm_verify_digest_resp_msg *verify_digest_resp_msg = (struct xm_verify_digest_resp_msg *)resp_msg;
+	struct xm_ss_auth_resp_msg *ss_auth_resp_msg = (struct xm_ss_auth_resp_msg *)resp_msg;
 
-	if (len == sizeof(*verify_digest_resp_msg)
-		|| len == sizeof(*ss_auth_resp_msg))
+	if (len == sizeof(*verify_digest_resp_msg) || len == sizeof(*ss_auth_resp_msg))
 		return true;
 #endif
 
@@ -1436,12 +1425,6 @@ struct quick_charge adapter_cap[11] = {
 	{0, 0},
 };
 
-#define ADAPTER_NONE              0x00
-#define ADAPTER_XIAOMI_PD_40W     0x0c
-#define ADAPTER_XIAOMI_PD_50W     0x0e
-#define ADAPTER_XIAOMI_PD_60W     0x0f
-#define ADAPTER_XIAOMI_PD_100W    0x10
-
 static u8 get_quick_charge_type(struct battery_chg_dev *bcdev)
 {
 	int i = 0,verify_digiest = 0;
@@ -1492,7 +1475,6 @@ static u8 get_quick_charge_type(struct battery_chg_dev *bcdev)
 
 	return QUICK_CHARGE_NORMAL;
 }
-
 
 static int battery_psy_set_fcc(struct battery_chg_dev *bcdev, u32 prop_id, int val)
 {
@@ -1621,9 +1603,6 @@ struct power_supply_desc usb_psy_desc = {
 	.num_usb_types		= ARRAY_SIZE(usb_psy_supported_types),
 	.property_is_writeable	= usb_psy_prop_is_writeable,
 };
-#ifdef CONFIG_MACH_XIAOMI
-static const struct power_supply_desc *pusb_psy_desc = &usb_psy_desc;
-#endif
 
 static int __battery_psy_set_charge_current(struct battery_chg_dev *bcdev,
 					u32 fcc_ua)
@@ -1839,14 +1818,15 @@ static const struct power_supply_desc batt_psy_desc = {
 
 static int battery_chg_init_psy(struct battery_chg_dev *bcdev)
 {
-	struct power_supply_config psy_cfg = {};
-	int rc;
 #ifdef CONFIG_MACH_XIAOMI
 	struct power_supply *psy;
 #endif
+	struct power_supply_config psy_cfg = {};
+	int rc;
 
 	psy_cfg.drv_data = bcdev;
 	psy_cfg.of_node = bcdev->dev->of_node;
+
 	bcdev->psy_list[PSY_TYPE_BATTERY].psy =
 		devm_power_supply_register(bcdev->dev, &batt_psy_desc,
 						&psy_cfg);
@@ -1860,11 +1840,7 @@ static int battery_chg_init_psy(struct battery_chg_dev *bcdev)
 #endif
 
 	bcdev->psy_list[PSY_TYPE_USB].psy =
-#ifndef CONFIG_MACH_XIAOMI
 		devm_power_supply_register(bcdev->dev, &usb_psy_desc, &psy_cfg);
-#else
-		devm_power_supply_register(bcdev->dev, pusb_psy_desc, &psy_cfg);
-#endif
 	if (IS_ERR(bcdev->psy_list[PSY_TYPE_USB].psy)) {
 		rc = PTR_ERR(bcdev->psy_list[PSY_TYPE_USB].psy);
 		pr_err("Failed to register USB power supply, rc=%d\n", rc);
@@ -2532,27 +2508,7 @@ static ssize_t ship_mode_en_show(struct class *c, struct class_attribute *attr,
 }
 static CLASS_ATTR_RW(ship_mode_en);
 
-#ifndef CONFIG_MACH_XIAOMI
-static struct attribute *battery_class_attrs[] = {
-	&class_attr_soh.attr,
-	&class_attr_resistance.attr,
-	&class_attr_moisture_detection_status.attr,
-	&class_attr_moisture_detection_en.attr,
-	&class_attr_wireless_boost_en.attr,
-	&class_attr_fake_soc.attr,
-	&class_attr_wireless_fw_update.attr,
-	&class_attr_wireless_fw_force_update.attr,
-	&class_attr_wireless_fw_version.attr,
-	&class_attr_wireless_fw_crc.attr,
-	&class_attr_ship_mode_en.attr,
-	&class_attr_restrict_chg.attr,
-	&class_attr_restrict_cur.attr,
-	&class_attr_usb_real_type.attr,
-	&class_attr_usb_typec_compliant.attr,
-	NULL,
-};
-ATTRIBUTE_GROUPS(battery_class);
-#else
+#ifdef CONFIG_MACH_XIAOMI
 static ssize_t real_type_show(struct class *c, struct class_attribute *attr,
 			char *buf)
 {
@@ -3500,6 +3456,12 @@ static ssize_t verify_process_show(struct class *c,
 }
 static CLASS_ATTR_RW(verify_process);
 
+#define BSWAP_32(x) \
+	(u32)((((u32)(x) & 0xff000000) >> 24) | \
+			(((u32)(x) & 0x00ff0000) >> 8) | \
+			(((u32)(x) & 0x0000ff00) << 8) | \
+			(((u32)(x) & 0x000000ff) << 24))
+
 static void usbpd_sha256_bitswap32(unsigned int *array, int len)
 {
 	int i;
@@ -3658,7 +3620,6 @@ static const char * const usbpd_state_strings[] = {
 	"SNK_Ready",
 	"SRC_Ready",
 };
-
 
 static ssize_t current_state_show(struct class *c,
 					struct class_attribute *attr, char *buf)
@@ -4196,6 +4157,7 @@ static ssize_t fg1_tfullq_show(struct class *c,
 	return scnprintf(buf, PAGE_SIZE, "%d\n", pst->prop[XM_PROP_FG1_TFULLQ]);
 }
 static CLASS_ATTR_RO(fg1_tfullq);
+#endif
 
 static struct attribute *battery_class_attrs[] = {
 	&class_attr_soh.attr,
@@ -4203,14 +4165,17 @@ static struct attribute *battery_class_attrs[] = {
 	&class_attr_moisture_detection_status.attr,
 	&class_attr_moisture_detection_en.attr,
 	&class_attr_wireless_boost_en.attr,
+#ifdef CONFIG_MACH_XIAOMI
 	&class_attr_wireless_register.attr,
 	&class_attr_wireless_input_curr.attr,
+#endif
 	&class_attr_fake_soc.attr,
 	&class_attr_wireless_fw_update.attr,
 	&class_attr_wireless_fw_force_update.attr,
 	&class_attr_wireless_fw_version.attr,
 	&class_attr_wireless_fw_crc.attr,
 	&class_attr_ship_mode_en.attr,
+#ifdef CONFIG_MACH_XIAOMI
 	&class_attr_real_type.attr,
 	&class_attr_resistance_id.attr,
 	&class_attr_verify_digest.attr,
@@ -4251,10 +4216,12 @@ static struct attribute *battery_class_attrs[] = {
 	&class_attr_adapter_svid.attr,
 	&class_attr_pd_verifed.attr,
 	&class_attr_pdo2.attr,
+#endif
 	&class_attr_restrict_chg.attr,
 	&class_attr_restrict_cur.attr,
 	&class_attr_usb_real_type.attr,
 	&class_attr_usb_typec_compliant.attr,
+#ifdef CONFIG_MACH_XIAOMI
 	&class_attr_fastchg_mode.attr,
 	&class_attr_apdo_max.attr,
 	&class_attr_thermal_remove.attr,
@@ -4282,10 +4249,10 @@ static struct attribute *battery_class_attrs[] = {
 	&class_attr_fg1_tambient.attr,
 	&class_attr_fg1_tremq.attr,
 	&class_attr_fg1_tfullq.attr,
+#endif
 	NULL,
 };
 ATTRIBUTE_GROUPS(battery_class);
-#endif
 
 #ifdef CONFIG_DEBUG_FS
 static void battery_chg_add_debugfs(struct battery_chg_dev *bcdev)
@@ -4759,7 +4726,9 @@ static int battery_chg_probe(struct platform_device *pdev)
 
 	dev_info(dev, "battery_chg_probe done\n");
 #endif
+
 	return 0;
+
 error:
 	bcdev->initialized = false;
 	complete(&bcdev->ack);
@@ -4793,41 +4762,15 @@ static int battery_chg_remove(struct platform_device *pdev)
 	return 0;
 }
 
-#ifdef CONFIG_MACH_XIAOMI
-static int chg_suspend(struct device *dev)
-{
-	pr_info("chg suspend\n");
-
-	return 0;
-}
-
-static int chg_resume(struct device *dev)
-{
-	pr_info("chg resume\n");
-
-	return 0;
-}
-#endif
-
 static const struct of_device_id battery_chg_match_table[] = {
 	{ .compatible = "qcom,battery-charger" },
 	{},
 };
 
-#ifdef CONFIG_MACH_XIAOMI
-static const struct dev_pm_ops chg_pm_ops = {
-	.resume = chg_resume,
-	.suspend = chg_suspend,
-};
-#endif
-
 static struct platform_driver battery_chg_driver = {
 	.driver = {
 		.name = "qti_battery_charger",
 		.of_match_table = battery_chg_match_table,
-#ifdef CONFIG_MACH_XIAOMI
-		.pm = &chg_pm_ops,
-#endif
 	},
 	.probe = battery_chg_probe,
 	.remove = battery_chg_remove,
