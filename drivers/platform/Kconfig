@@ -18,5 +18,5 @@ source "drivers/platform/msm/Kconfig"
 endif
 
 if ARCH_QCOM
-source "drivers/platform/xiaomi/Kconfig"
+source "drivers/platform/infinix/Kconfig"
 endif
