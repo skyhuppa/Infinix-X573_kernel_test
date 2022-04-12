@@ -1,7 +1,7 @@
 menu "Xiaomi board selection"
 
 config MACH_INFINIX
-	bool "Support for Xiaomi products"
+	bool "Support for Infinix products"
 	depends on ARCH_QCOM
 	help
 	  Support for Infinix products.
@@ -15,7 +15,7 @@ config MACH_XIAOMI_MSM8937
 
 config MACH_XIAOMI_LISA
 	bool "Support for Infinix Hot S 3 (X573) board"
-	select MACH_XIAOMI_MSM8937
+	select MACH_INFINIX_MSM8937
 	help
 	  Support for Infinix Hot S 3 (X573) board.
 
