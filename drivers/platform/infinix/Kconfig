@@ -21,7 +21,7 @@ config MACH_INFINIX_X573
 
 endmenu
 
-comment "Xiaomi Features"
+comment "Infinix Features"
 
 config PERF_HUMANTASK
 	bool "enable feature humantask"
